@@ -25,7 +25,7 @@ app.get('/', (req, res) => {
 });
 
 // API routes
-app.use("/auth", auth);
+app.use("/member", auth);
 app.use("/primbon", primbon);
 app.use("/religion", religion);
 app.use("/downloader", downloader);
