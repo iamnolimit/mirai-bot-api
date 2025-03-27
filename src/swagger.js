@@ -2,6 +2,8 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const { SwaggerTheme, SwaggerThemeNameEnum } = require('swagger-themes');
 
+const path = require('path');
+
 // Swagger definition
 const swaggerOptions = {
   definition: {
@@ -9,7 +11,7 @@ const swaggerOptions = {
     info: {
       title: 'Mirai API',
       version: '1.0.0',
-      description: 'API documentation for Mirai Bot services',
+      description: 'API documentation for Mirai API services',
       contact: {
         name: 'API Support'
       },
@@ -52,10 +54,23 @@ const swaggerOptions = {
             }
           }
         }
-      }
-    }
+      },
+      securitySchemes: {
+        apiKeyAuth: {
+          type: 'apiKey',
+          in: 'header',
+          name: 'X-API-Key',
+          description: 'API Key for authentication',
+        },
+      },
+    },
+    security: [
+      {
+        apiKeyAuth: [],
+      },
+    ],
   },
-  apis: ['./src/routes/*.js'], // Path to the API docs
+  apis: [path.join(__dirname, './routes/*.js'), path.join(__dirname, './*.js')],
 };
 
 // Initialize swagger-jsdoc

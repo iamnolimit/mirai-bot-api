@@ -1,6 +1,7 @@
 const express = require("express");
 require('dotenv').config();
 const connectDB = require('./db');
+const { initCronJobs } = require('./cronjob');
 
 // Connect to MongoDB
 connectDB();
@@ -11,7 +12,9 @@ const religion = require("./routes/religion");
 const downloader = require("./routes/downloader");
 const artificial = require("./routes/artificial");
 const saweria = require("./routes/saweria");
+const tools = require("./routes/tools");
 const { router: auth } = require("./routes/member");
+const admin = require("./routes/admin");
 const { swaggerDocs } = require("./swagger");
 
 
@@ -26,14 +29,21 @@ app.get('/', (req, res) => {
 
 // API routes
 app.use("/member", auth);
+app.use("/admin", admin);
 app.use("/primbon", primbon);
 app.use("/religion", religion);
 app.use("/downloader", downloader);
 app.use("/artificial", artificial);
 app.use("/saweria", saweria);
+app.use("/tools", tools);
 
 // Initialize Swagger documentation
 swaggerDocs(app);
 
 const PORT = 8080;
-app.listen(PORT, () => console.log(`Listening on http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Listening on http://localhost:${PORT}`);
+  
+  // Initialize cron jobs
+  initCronJobs();
+});

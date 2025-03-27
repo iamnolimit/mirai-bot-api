@@ -1,17 +1,17 @@
 const express = require("express");
 const { youtubeSearch } = require("@bochilteam/scraper-youtube");
-const { igdl, ttdl, fbdown, twitter, youtube } = require('btch-downloader');
-const router = express.Router();
-const axios = require("axios");
+const { igdl, ttdl, fbdown, twitter } = require('btch-downloader');
+const { ytmp3, ytmp4 } = require('ruhend-scraper');
 const { terabox } = require("rana-videos-downloader");
+const { spotify } = require("majidapi/modules/music");
+const fs = require('fs');
+const path = require('path');
+const router = express.Router();
 const { validateApiKey } = require('./member');
 
 // Middleware for parsing JSON and API key validation
 router.use(express.json());
 router.use(validateApiKey);
-
-// Remove the agent creation that's causing issues
-// const agent = ytdl.createAgent(JSON.parse(fs.readFileSync("cookies.json")));
 
 /**
  * @swagger
@@ -98,45 +98,79 @@ router.post("/ytsearch", async (req, res) => {
  *                 description: YouTube video URL
  *     responses:
  *       200:
- *         description: YouTube download links
+ *         description: YouTube video stream
  *         content:
- *           application/json:
+ *           video/mp4:
  *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: integer
- *                   example: 200
- *                 result:
- *                   type: object
- *       400:
- *         description: Missing or invalid URL
- *       500:
- *         description: Server error
+ *               type: string
+ *               format: binary
  */
+// Remove ytdl import since we're not using it anymore
+
 router.post("/ytdl", async (req, res) => {
   try {
     const { url } = req.body;
 
     if (!url) {
-      return res.status(400).json({ status: 400, message: "URL is required" });
+      return res.status(400).json({ status: false, message: "URL is required" });
     }
 
     try {
       new URL(url);
     } catch {
-      return res
-        .status(400)
-        .json({ status: 400, message: "Invalid URL format" });
+      return res.status(400).json({ status: false, message: "Invalid URL format" });
     }
 
-    const data = await youtube(url);
-    res.json({ status: 200, result: data });
+    // Get both MP3 and MP4 data
+    const [mp3Data, mp4Data] = await Promise.all([
+      ytmp3(url),
+      ytmp4(url)
+    ]);
+
+    res.json({
+      status: true,
+      result: {
+        title: mp4Data.title,
+        description: mp4Data.description?.slice(0, 150) + "...",
+        author: mp4Data.author,
+        duration: mp4Data.duration,
+        views: mp4Data.views,
+        upload: mp4Data.upload,
+        thumb: mp4Data.thumbnail,
+        source: url,
+        mp3: mp3Data.audio,
+        mp4: mp4Data.video
+      }
+    });
+
+    // Cleanup base files after response is sent
+    const tempDir = path.join(__dirname, '../../');
+    fs.readdir(tempDir, (err, files) => {
+      if (err) {
+        console.error('Error reading temp directory:', err);
+        return;
+      }
+      
+      files.forEach(file => {
+        if (file.endsWith('-base.js')) {
+          fs.unlink(path.join(tempDir, file), (unlinkErr) => {
+            if (unlinkErr) {
+              console.error(`Error deleting file ${file}:`, unlinkErr);
+            } else {
+              console.log(`Successfully deleted ${file}`);
+            }
+          });
+        }
+      });
+    });
+
   } catch (error) {
     console.error(error);
-    return res
-      .status(500)
-      .json({ status: 500, message: "Server error", error: error.message });
+    return res.status(500).json({
+      status: false,
+      message: "Server error",
+      error: error.message
+    });
   }
 });
 
@@ -458,6 +492,82 @@ router.post("/terabox", async (req, res) => {
             status: 500, 
             message: "Server error", 
             error: error.message 
+        });
+    }
+});
+
+/**
+ * @swagger
+ * /downloader/spotify:
+ *   post:
+ *     summary: Download Spotify tracks
+ *     tags: [Downloader]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - url
+ *             properties:
+ *               url:
+ *                 type: string
+ *                 description: Spotify track URL
+ *     responses:
+ *       200:
+ *         description: Audio file stream
+ *         content:
+ *           audio/mpeg:
+ *             schema:
+ *               type: string
+ *               format: binary
+ */
+router.post("/spotify", async (req, res) => {
+    const tempFile = path.join(__dirname, `../temp/spotify-${Date.now()}.mp3`);
+    try {
+        const { url } = req.body;
+
+        if (!url) {
+            return res.status(400).json({ status: 400, message: "URL is required" });
+        }
+
+        try {
+            new URL(url);
+        } catch {
+            return res.status(400).json({ status: 400, message: "Invalid URL format" });
+        }
+
+        await spotify({
+            url: url,
+            out: tempFile
+        });
+
+        res.setHeader('Content-Type', 'audio/mpeg');
+        res.setHeader('Content-Disposition', 'attachment; filename=track.mp3');
+
+        // Send file and delete after sending
+        res.sendFile(tempFile, (err) => {
+            if (err) {
+                console.error('Error sending file:', err);
+            }
+            // Delete the temporary file
+            fs.unlink(tempFile, (unlinkErr) => {
+                if (unlinkErr) {
+                    console.error('Error deleting temporary file:', unlinkErr);
+                }
+            });
+        });
+    } catch (error) {
+        // Clean up file if exists and there was an error
+        if (fs.existsSync(tempFile)) {
+            fs.unlinkSync(tempFile);
+        }
+        console.error('Spotify download error:', error);
+        return res.status(500).json({
+            status: 500,
+            message: "Server error",
+            error: error.message
         });
     }
 });
