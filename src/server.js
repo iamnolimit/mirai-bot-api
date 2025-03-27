@@ -11,7 +11,7 @@ const primbon = require("./routes/primbon");
 const religion = require("./routes/religion");
 const downloader = require("./routes/downloader");
 const artificial = require("./routes/artificial");
-const saweria = require("./routes/saweria");
+const payment = require("./routes/payment");
 const tools = require("./routes/tools");
 const games = require("./routes/games");
 const { router: auth } = require("./routes/member");
@@ -35,7 +35,7 @@ app.use("/primbon", primbon);
 app.use("/religion", religion);
 app.use("/downloader", downloader);
 app.use("/artificial", artificial);
-app.use("/saweria", saweria);
+app.use("/payment", payment);
 app.use("/tools", tools);
 app.use("/games", games);
 

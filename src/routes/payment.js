@@ -10,8 +10,8 @@ router.use(validateApiKey);
 /**
  * @swagger
  * tags:
- *   name: Saweria
- *   description: Saweria API - Payment QR code generation
+ *   name: Payment
+ *   description: Payment API - Payment QR code generation
  */
 
 // Helper function to create a Saweria client from request
@@ -37,7 +37,7 @@ async function getSaweriaClient(req) {
  * /saweria/createqr:
  *   post:
  *     summary: Create Saweria payment QR code
- *     tags: [Saweria]
+ *     tags: [Payment]
  *     requestBody:
  *       required: true
  *       content:
@@ -86,7 +86,7 @@ async function getSaweriaClient(req) {
  *       500:
  *         description: Server error
  */
-router.post("/createqr", async (req, res) => {
+router.post("/saweria/createqr", async (req, res) => {
   try {
     const { amount, duration = 30 } = req.body;
 
@@ -136,7 +136,7 @@ router.post("/createqr", async (req, res) => {
  * /saweria/checkpayment:
  *   post:
  *     summary: Check payment status by transaction ID
- *     tags: [Saweria]
+ *     tags: [Payment]
  *     requestBody:
  *       required: true
  *       content:
@@ -190,7 +190,7 @@ router.post("/createqr", async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.post("/checkpayment", async (req, res) => {
+router.post("/saweria/checkpayment", async (req, res) => {
   try {
     const { trxId } = req.body;
 
