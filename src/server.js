@@ -13,6 +13,7 @@ const downloader = require("./routes/downloader");
 const artificial = require("./routes/artificial");
 const saweria = require("./routes/saweria");
 const tools = require("./routes/tools");
+const games = require("./routes/games");
 const { router: auth } = require("./routes/member");
 const admin = require("./routes/admin");
 const { swaggerDocs } = require("./swagger");
@@ -36,6 +37,7 @@ app.use("/downloader", downloader);
 app.use("/artificial", artificial);
 app.use("/saweria", saweria);
 app.use("/tools", tools);
+app.use("/games", games);
 
 // Initialize Swagger documentation
 swaggerDocs(app);

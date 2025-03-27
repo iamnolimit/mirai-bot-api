@@ -16,12 +16,6 @@ const swaggerOptions = {
         name: 'API Support'
       },
     },
-    servers: [
-      {
-        url: 'http://localhost:8080',
-        description: 'Development server',
-      },
-    ],
     components: {
       schemas: {
         Error: {

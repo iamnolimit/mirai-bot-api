@@ -1,7 +1,7 @@
 const express = require("express");
 const { youtubeSearch } = require("@bochilteam/scraper-youtube");
 const { igdl, ttdl, fbdown, twitter } = require('btch-downloader');
-const { ytmp3, ytmp4 } = require('ruhend-scraper');
+const ddownr = require('denethdev-ytmp3');
 const { terabox } = require("rana-videos-downloader");
 const { spotify } = require("majidapi/modules/music");
 const fs = require('fs');
@@ -105,8 +105,6 @@ router.post("/ytsearch", async (req, res) => {
  *               type: string
  *               format: binary
  */
-// Remove ytdl import since we're not using it anymore
-
 router.post("/ytdl", async (req, res) => {
   try {
     const { url } = req.body;
@@ -121,25 +119,24 @@ router.post("/ytdl", async (req, res) => {
       return res.status(400).json({ status: false, message: "Invalid URL format" });
     }
 
-    // Get both MP3 and MP4 data
-    const [mp3Data, mp4Data] = await Promise.all([
-      ytmp3(url),
-      ytmp4(url)
+    const [mp3Result, mp4Result, songInfo] = await Promise.all([
+      ddownr.download(url, 'mp3'),
+      ddownr.download(url, '480'),
+      youtubeSearch(url)
     ]);
+    const resultSong = songInfo.video[0];
 
     res.json({
       status: true,
       result: {
-        title: mp4Data.title,
-        description: mp4Data.description?.slice(0, 150) + "...",
-        author: mp4Data.author,
-        duration: mp4Data.duration,
-        views: mp4Data.views,
-        upload: mp4Data.upload,
-        thumb: mp4Data.thumbnail,
+        title: resultSong.title || "Unknown Title",
+        description: resultSong.description?.slice(0, 150) + "..." || "No description available",
+        duration: resultSong.durationH || 0,
+        views: resultSong.viewH || 0,
+        thumb: resultSong.thumbnail || "",
         source: url,
-        mp3: mp3Data.audio,
-        mp4: mp4Data.video
+        mp3: mp3Result.downloadUrl || "",
+        mp4: mp4Result.downloadUrl || ""
       }
     });
 
