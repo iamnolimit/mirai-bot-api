@@ -25,13 +25,24 @@ async function getSaweriaClient(req) {
   try {
     const sawer = new SumshiiySawer({ username, email, password });
     console.log("Attempting Saweria login...");
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    const loginResult = await sawer.login();
+
+    // Add delay before login attempt
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    const loginResult = await Promise.race([
+      sawer.login(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Login timeout")), 15000)
+      ),
+    ]);
 
     if (!loginResult.status) {
       console.error("Login failed:", loginResult);
       throw new Error(loginResult.error || "Login failed");
     }
+
+    // Add small delay after successful login
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     console.log("Login successful");
     return sawer;
