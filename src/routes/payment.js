@@ -1,7 +1,7 @@
 const express = require("express");
-const { SumshiiySawer } = require('saweria-createqr');
+const { SumshiiySawer } = require("saweria-createqr");
 const router = express.Router();
-const { validateApiKey } = require('./member');
+const { validateApiKey } = require("./member");
 
 // Middleware for parsing JSON and API key validation
 router.use(express.json());
@@ -17,24 +17,24 @@ router.use(validateApiKey);
 // Helper function to create a Saweria client from request
 async function getSaweriaClient(req) {
   const { username, email, password } = req.body;
-  
+
   if (!username || !email || !password) {
     throw new Error("Username, email, and password are required");
   }
-  
+
   const sawer = new SumshiiySawer({ username, email, password });
   const loginResult = await sawer.login();
-  
+
   if (!loginResult.status) {
     throw new Error(loginResult.error || "Login failed");
   }
-  
+
   return sawer;
 }
 
 /**
  * @swagger
- * /saweria/createqr:
+ * /payment/saweria/createqr:
  *   post:
  *     summary: Create Saweria payment QR code
  *     tags: [Payment]
@@ -91,9 +91,9 @@ router.post("/saweria/createqr", async (req, res) => {
     const { amount, duration = 30 } = req.body;
 
     if (!amount) {
-      return res.status(400).json({ 
-        status: 400, 
-        message: "Amount is required" 
+      return res.status(400).json({
+        status: 400,
+        message: "Amount is required",
       });
     }
 
@@ -105,7 +105,7 @@ router.post("/saweria/createqr", async (req, res) => {
 
     res.json({
       status: 200,
-      result: payment
+      result: payment,
     });
   } catch (error) {
     console.error(error);
@@ -113,27 +113,30 @@ router.post("/saweria/createqr", async (req, res) => {
     if (error.message.includes("required")) {
       return res.status(400).json({
         status: 400,
-        message: error.message
+        message: error.message,
       });
-    } else if (error.message.includes("Login failed") || error.message.includes("Invalid")) {
+    } else if (
+      error.message.includes("Login failed") ||
+      error.message.includes("Invalid")
+    ) {
       return res.status(401).json({
         status: 401,
         message: "Authentication failed",
-        error: error.message
+        error: error.message,
       });
     }
 
     return res.status(500).json({
       status: 500,
       message: "Failed to create QR code",
-      error: error.message
+      error: error.message,
     });
   }
 });
 
 /**
  * @swagger
- * /saweria/checkpayment:
+ * /payment/saweria/checkpayment:
  *   post:
  *     summary: Check payment status by transaction ID
  *     tags: [Payment]
@@ -195,9 +198,9 @@ router.post("/saweria/checkpayment", async (req, res) => {
     const { trxId } = req.body;
 
     if (!trxId) {
-      return res.status(400).json({ 
-        status: 400, 
-        message: "Transaction ID is required" 
+      return res.status(400).json({
+        status: 400,
+        message: "Transaction ID is required",
       });
     }
 
@@ -206,17 +209,17 @@ router.post("/saweria/checkpayment", async (req, res) => {
 
     // Check payment status
     const paymentStatus = await sawer.cekPaymentv2(trxId);
-    
+
     if (paymentStatus.code === 404) {
       return res.status(404).json({
         status: 404,
-        message: "Transaction not found"
+        message: "Transaction not found",
       });
     }
 
     res.json({
       status: 200,
-      result: paymentStatus
+      result: paymentStatus,
     });
   } catch (error) {
     console.error(error);
@@ -224,20 +227,23 @@ router.post("/saweria/checkpayment", async (req, res) => {
     if (error.message.includes("required")) {
       return res.status(400).json({
         status: 400,
-        message: error.message
+        message: error.message,
       });
-    } else if (error.message.includes("Login failed") || error.message.includes("Invalid")) {
+    } else if (
+      error.message.includes("Login failed") ||
+      error.message.includes("Invalid")
+    ) {
       return res.status(401).json({
         status: 401,
         message: "Authentication failed",
-        error: error.message
+        error: error.message,
       });
     }
 
     return res.status(500).json({
       status: 500,
       message: "Failed to check payment status",
-      error: error.message
+      error: error.message,
     });
   }
 });
