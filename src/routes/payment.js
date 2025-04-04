@@ -22,14 +22,23 @@ async function getSaweriaClient(req) {
     throw new Error("Username, email, and password are required");
   }
 
-  const sawer = new SumshiiySawer({ username, email, password });
-  const loginResult = await sawer.login();
+  try {
+    const sawer = new SumshiiySawer({ username, email, password });
+    console.log("Attempting Saweria login...");
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const loginResult = await sawer.login();
 
-  if (!loginResult.status) {
-    throw new Error(loginResult.error || "Login failed");
+    if (!loginResult.status) {
+      console.error("Login failed:", loginResult);
+      throw new Error(loginResult.error || "Login failed");
+    }
+
+    console.log("Login successful");
+    return sawer;
+  } catch (error) {
+    console.error("Saweria client error:", error);
+    throw error;
   }
-
-  return sawer;
 }
 
 /**
@@ -88,7 +97,19 @@ async function getSaweriaClient(req) {
  */
 router.post("/saweria/createqr", async (req, res) => {
   try {
-    const { amount, duration = 30 } = req.body;
+    const { username, email, password, amount, duration = 30 } = req.body;
+    console.log(
+      "Received request with username:",
+      username,
+      "email:",
+      email,
+      "password:",
+      password,
+      "amount:",
+      amount,
+      "duration:",
+      duration
+    );
 
     if (!amount) {
       return res.status(400).json({
