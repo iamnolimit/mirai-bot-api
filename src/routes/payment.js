@@ -17,49 +17,19 @@ router.use(validateApiKey);
 // Helper function to create a Saweria client from request
 async function getSaweriaClient(req) {
   const { username, email, password } = req.body;
-  let attempts = 0;
-  const maxAttempts = 3;
 
-  while (attempts < maxAttempts) {
-    try {
-      attempts++;
-      console.log(`Login attempt ${attempts}/${maxAttempts}`);
-
-      const sawer = new SumshiiySawer({ username, email, password });
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      const loginResult = await Promise.race([
-        sawer.login(),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Login timeout")), 15000)
-        ),
-      ]);
-
-      if (loginResult.status) {
-        console.log("Login successful");
-        return sawer;
-      } else {
-        console.error(
-          `Login failed (attempt ${attempts}/${maxAttempts}):`,
-          loginResult.error
-        );
-        if (attempts >= maxAttempts)
-          throw new Error(
-            loginResult.error || "Login failed after multiple attempts"
-          );
-        // Tunggu sebelum mencoba lagi
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-      }
-    } catch (error) {
-      if (attempts >= maxAttempts) throw error;
-      console.error(
-        `Error on attempt ${attempts}/${maxAttempts}:`,
-        error.message
-      );
-      // Tunggu sebelum mencoba lagi
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-    }
+  if (!username || !email || !password) {
+    throw new Error("Username, email, and password are required");
   }
+
+  const sawer = new SumshiiySawer({ username, email, password });
+  const loginResult = await sawer.login();
+
+  if (!loginResult.status) {
+    throw new Error(loginResult.error || "Login failed");
+  }
+
+  return sawer;
 }
 
 /**
@@ -118,19 +88,7 @@ async function getSaweriaClient(req) {
  */
 router.post("/saweria/createqr", async (req, res) => {
   try {
-    const { username, email, password, amount, duration = 30 } = req.body;
-    console.log(
-      "Received request with username:",
-      username,
-      "email:",
-      email,
-      "password:",
-      password,
-      "amount:",
-      amount,
-      "duration:",
-      duration
-    );
+    const { amount, duration = 30 } = req.body;
 
     if (!amount) {
       return res.status(400).json({
