@@ -17,38 +17,48 @@ router.use(validateApiKey);
 // Helper function to create a Saweria client from request
 async function getSaweriaClient(req) {
   const { username, email, password } = req.body;
+  let attempts = 0;
+  const maxAttempts = 3;
 
-  if (!username || !email || !password) {
-    throw new Error("Username, email, and password are required");
-  }
+  while (attempts < maxAttempts) {
+    try {
+      attempts++;
+      console.log(`Login attempt ${attempts}/${maxAttempts}`);
 
-  try {
-    const sawer = new SumshiiySawer({ username, email, password });
-    console.log("Attempting Saweria login...");
+      const sawer = new SumshiiySawer({ username, email, password });
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    // Add delay before login attempt
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+      const loginResult = await Promise.race([
+        sawer.login(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Login timeout")), 15000)
+        ),
+      ]);
 
-    const loginResult = await Promise.race([
-      sawer.login(),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Login timeout")), 15000)
-      ),
-    ]);
-
-    if (!loginResult.status) {
-      console.error("Login failed:", loginResult);
-      throw new Error(loginResult.error || "Login failed");
+      if (loginResult.status) {
+        console.log("Login successful");
+        return sawer;
+      } else {
+        console.error(
+          `Login failed (attempt ${attempts}/${maxAttempts}):`,
+          loginResult.error
+        );
+        if (attempts >= maxAttempts)
+          throw new Error(
+            loginResult.error || "Login failed after multiple attempts"
+          );
+        // Tunggu sebelum mencoba lagi
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+      }
+    } catch (error) {
+      if (attempts >= maxAttempts) throw error;
+      console.error(
+        `Error on attempt ${attempts}/${maxAttempts}:`,
+        error.message
+      );
+      // Tunggu sebelum mencoba lagi
+      await new Promise((resolve) => setTimeout(resolve, 5000));
     }
-
-    // Add small delay after successful login
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    console.log("Login successful");
-    return sawer;
-  } catch (error) {
-    console.error("Saweria client error:", error);
-    throw error;
   }
 }
 
